@@ -33,9 +33,8 @@
     .header-left .subtitle { font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
     .badge { display: flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #34d399; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 20px; letter-spacing: 0.5px; }
     .badge-dot { width: 7px; height: 7px; background: #34d399; border-radius: 50%; box-shadow: 0 0 6px #34d399; }
-    .screen { display: none; flex: 1; flex-direction: column; animation: fadeIn 0.25s ease; }
+    .screen { display: none; flex: 1; flex-direction: column; }
     .screen.active { display: flex; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 22px 20px; margin-bottom: 14px; }
     .card-label { font-size: 11px; letter-spacing: 1.2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; text-align: center; }
     .main-value { font-size: 42px; font-weight: 700; text-align: center; letter-spacing: -1px; line-height: 1.1; }
@@ -71,6 +70,7 @@
 </head>
 <body>
   <div class="app">
+    <!-- PAGE 1: Home / Clock -->
     <div id="home" class="screen active">
       <div class="header">
         <div class="header-left">
@@ -85,6 +85,7 @@
       </div>
     </div>
 
+    <!-- PAGE 2: Settings -->
     <div id="settings" class="screen">
       <div class="settings-header">
         <button class="back-btn" onclick="showScreen('home')">←</button>
@@ -144,7 +145,7 @@
       settings = { birthDate: birth, heartRate: heart, breathRate: breath };
       localStorage.setItem("lifeClockSettings", JSON.stringify(settings));
       showScreen("home");
-      updateDisplay();
+      buildDisplay();
       startTimer();
     }
 
@@ -193,7 +194,7 @@
 
       return {
         totalDays, wholeYears: years, remainingDays,
-        remHours, remMinutes, remSeconds, totalHours,
+        remHours, remMinutes, remSeconds,
         heartbeats, breaths, heartRate: settings.heartRate, breathRate: settings.breathRate,
         bloodGallons, spaceMiles
       };
@@ -201,7 +202,7 @@
 
     function formatNumber(n) { return n.toLocaleString("en-US"); }
 
-    function updateDisplay() {
+    function buildDisplay() {
       const el = document.getElementById("content");
       const data = getElapsed();
       if (!data) {
@@ -211,53 +212,67 @@
       el.innerHTML = `
         <div class="card">
           <div class="card-label">Time Elapsed</div>
-          <div class="main-value">${formatNumber(data.totalDays)} days</div>
-          <div class="sub-value">${data.remHours} hours · ${data.remMinutes} minutes · ${data.remSeconds} seconds</div>
+          <div class="main-value" id="days">—</div>
+          <div class="sub-value" id="time">—</div>
           <div class="live"><span class="live-dot"></span> Updates every second</div>
         </div>
         <div class="card years-card">
           <div class="card-label">Age</div>
-          <div class="main-value">${data.wholeYears} Years and ${formatNumber(data.remainingDays)} Days</div>
+          <div class="main-value" id="age">—</div>
         </div>
         <div class="grid-2">
           <div class="stat-card">
             <div class="stat-icon">❤️</div>
             <div class="stat-label">Estimated heartbeats</div>
-            <div class="stat-value">${formatNumber(data.heartbeats)}</div>
-            <div class="stat-rate">At ${data.heartRate} beats/min</div>
+            <div class="stat-value" id="heart">—</div>
+            <div class="stat-rate" id="heartRateLabel">—</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">💨</div>
             <div class="stat-label">Estimated breaths</div>
-            <div class="stat-value">${formatNumber(data.breaths)}</div>
-            <div class="stat-rate">At ${data.breathRate} breaths/min</div>
+            <div class="stat-value" id="breath">—</div>
+            <div class="stat-rate" id="breathRateLabel">—</div>
           </div>
         </div>
         <div class="grid-2">
           <div class="stat-card">
             <div class="stat-icon">🩸</div>
             <div class="stat-label">Blood circulated</div>
-            <div class="stat-value">${formatNumber(data.bloodGallons)}</div>
+            <div class="stat-value" id="blood">—</div>
             <div class="stat-rate">gallons</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🌍</div>
             <div class="stat-label">Earth traveled</div>
-            <div class="stat-value">${formatNumber(data.spaceMiles)}</div>
+            <div class="stat-value" id="miles">—</div>
             <div class="stat-rate">miles</div>
           </div>
         </div>
       `;
+      updateNumbers();
+    }
+
+    function updateNumbers() {
+      const data = getElapsed();
+      if (!data || !document.getElementById("days")) return;
+      document.getElementById("days").textContent = formatNumber(data.totalDays) + " days";
+      document.getElementById("time").textContent = data.remHours + " hours · " + data.remMinutes + " minutes · " + data.remSeconds + " seconds";
+      document.getElementById("age").textContent = data.wholeYears + " Years and " + formatNumber(data.remainingDays) + " Days";
+      document.getElementById("heart").textContent = formatNumber(data.heartbeats);
+      document.getElementById("heartRateLabel").textContent = "At " + data.heartRate + " beats/min";
+      document.getElementById("breath").textContent = formatNumber(data.breaths);
+      document.getElementById("breathRateLabel").textContent = "At " + data.breathRate + " breaths/min";
+      document.getElementById("blood").textContent = formatNumber(data.bloodGallons);
+      document.getElementById("miles").textContent = formatNumber(data.spaceMiles);
     }
 
     function startTimer() {
       if (timer) clearInterval(timer);
-      updateDisplay();
-      timer = setInterval(updateDisplay, 1000);
+      timer = setInterval(updateNumbers, 1000);
     }
 
-    // Start
-    updateDisplay();
+    // Initial load
+    buildDisplay();
     if (settings.birthDate) startTimer();
   </script>
 </body>
